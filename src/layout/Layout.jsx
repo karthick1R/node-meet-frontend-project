@@ -4,13 +4,14 @@ import Header from "./Header";
 
 export default function Layout() {
   return (
-    <div>
+    <div className="min-h-screen bg-gray-50">
       <Sidebar />
       <Header />
-
-      <div className="ml-60 mt-20 p-6 bg-gray-100 min-h-screen">
-        <Outlet />
-      </div>
+      <main className="ml-64 pt-20 px-8 pb-12">
+        <div className="max-w-7xl mx-auto">
+          <Outlet />
+        </div>
+      </main>
     </div>
   );
 }
