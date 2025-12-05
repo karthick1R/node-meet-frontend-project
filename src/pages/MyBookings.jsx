@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
+import Swal from "sweetalert2";
 import {
   cancelBooking,
   deleteBooking,
   getMyBookings,
 } from "../api/bookings";
 import BookingModal from "../components/BookingModal";
+import ReasonModal from "../components/ReasonModal";
 
 export default function MyBookings() {
   const [bookings, setBookings] = useState([]);
@@ -12,6 +14,9 @@ export default function MyBookings() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showModal, setShowModal] = useState(false);
+
+  const [reasonType, setReasonType] = useState(null);
+  const [selectedId, setSelectedId] = useState(null);
 
   const loadBookings = async () => {
     setLoading(true);
@@ -35,26 +40,49 @@ export default function MyBookings() {
       ? bookings
       : bookings.filter((booking) => booking.status === statusFilter);
 
-  const handleCancel = async (id) => {
-    const reason = window.prompt("Cancellation reason:");
-    if (reason === null) return;
+  // --------------------------
+  // Handle Cancel
+  // --------------------------
+  const submitCancel = async (reason) => {
     try {
-      await cancelBooking(id, reason);
+      await cancelBooking(selectedId, reason);
+      setReasonType(null);
+
       await loadBookings();
-      window.alert("Booking cancelled successfully");
+
+      Swal.fire({
+        toast: true,
+        position: "top-end",
+        icon: "success",
+        title: "Booking cancelled successfully!",
+        showConfirmButton: false,
+        timer: 2000,
+      });
     } catch (err) {
-      alert(err.response?.data?.message || "Unable to cancel booking");
+      Swal.fire("Error", err.response?.data?.message || "Failed to cancel", "error");
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Delete this booking permanently?")) return;
+  // --------------------------
+  // Handle Delete
+  // --------------------------
+  const submitDelete = async (reason) => {
     try {
-      await deleteBooking(id);
+      await deleteBooking(selectedId, reason);
+      setReasonType(null);
+
       await loadBookings();
-      window.alert("Booking deleted successfully");
+
+      Swal.fire({
+        toast: true,
+        position: "top-end",
+        icon: "success",
+        title: "Booking deleted successfully!",
+        showConfirmButton: false,
+        timer: 2000,
+      });
     } catch (err) {
-      alert(err.response?.data?.message || "Unable to delete booking");
+      Swal.fire("Error", err.response?.data?.message || "Failed to delete", "error");
     }
   };
 
@@ -133,14 +161,21 @@ export default function MyBookings() {
                       {booking.status !== "cancelled" && (
                         <button
                           className="text-blue-600"
-                          onClick={() => handleCancel(booking._id)}
+                          onClick={() => {
+                            setSelectedId(booking._id);
+                            setReasonType("cancel");
+                          }}
                         >
                           Cancel
                         </button>
                       )}
+
                       <button
                         className="text-red-600"
-                        onClick={() => handleDelete(booking._id)}
+                        onClick={() => {
+                          setSelectedId(booking._id);
+                          setReasonType("delete");
+                        }}
                       >
                         Delete
                       </button>
@@ -155,11 +190,37 @@ export default function MyBookings() {
 
       {showModal && (
         <BookingModal
-          close={() => setShowModal(false)}
+          close={() => {
+            setShowModal(false);
+
+            Swal.fire({
+              toast: true,
+              position: "top-end",
+              icon: "success",
+              title: "New booking created!",
+              showConfirmButton: false,
+              timer: 2000,
+            });
+          }}
           refresh={loadBookings}
+        />
+      )}
+
+      {reasonType === "cancel" && (
+        <ReasonModal
+          title="Cancel Booking"
+          onSubmit={submitCancel}
+          onClose={() => setReasonType(null)}
+        />
+      )}
+
+      {reasonType === "delete" && (
+        <ReasonModal
+          title="Delete Booking"
+          onSubmit={submitDelete}
+          onClose={() => setReasonType(null)}
         />
       )}
     </div>
   );
 }
-
