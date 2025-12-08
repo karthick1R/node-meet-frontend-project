@@ -8,8 +8,6 @@ import {
   User,
   Settings,
   Users,
-  UserCog,
-  LogOut,
 } from "lucide-react";
 
 const BACKEND_URL = "http://localhost:5000";
@@ -25,6 +23,8 @@ export default function Sidebar() {
     return () => window.removeEventListener("storage", handleStorage);
   }, []);
 
+  const isActive = (path) => location.pathname === path;
+
   const mainMenu = [
     { name: "Dashboard", icon: LayoutDashboard, path: "/" },
     { name: "Rooms", icon: Building2, path: "/rooms" },
@@ -36,14 +36,13 @@ export default function Sidebar() {
   const adminMenu = [
     { name: "Manage Rooms", icon: Settings, path: "/manage-rooms" },
     { name: "All Bookings", icon: CalendarCheck, path: "/all-bookings" },
-    { name: "Manage Users", icon: Users, path: "/manage-users" },
+    { name: "Manage Users", icon: Users, path: "/manage-users" }, // ✅ ADMIN + SUPERADMIN
   ];
-
-  const isActive = (path) => location.pathname === path;
 
   return (
     <aside className="fixed left-0 top-0 w-64 h-screen bg-white border-r border-gray-200 shadow-lg z-50 flex flex-col">
-      {/* Logo & Title */}
+      
+      {/* Logo */}
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center gap-3">
           <img
@@ -52,52 +51,56 @@ export default function Sidebar() {
             className="w-10 h-10 rounded-lg object-cover border border-gray-300"
           />
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Meeting Rooms</h1>
+            <h1 className="text-xl font-bold text-gray-900">
+              Meeting Rooms
+            </h1>
             <p className="text-xs text-gray-500">Booking System</p>
           </div>
         </div>
       </div>
 
-      {/* Navigation */}
+      {/* Menu */}
       <nav className="flex-1 p-4 space-y-1">
         {mainMenu.map((item) => (
           <Link
             key={item.path}
             to={item.path}
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 font-medium ${
+            className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition ${
               isActive(item.path)
-                ? "bg-blue-50 text-blue-700 border border-blue-200 shadow-sm"
+                ? "bg-blue-50 text-blue-700 border border-blue-200"
                 : "text-gray-700 hover:bg-gray-100"
             }`}
           >
             <item.icon className="w-5 h-5" />
             <span>{item.name}</span>
             {isActive(item.path) && (
-              <div className="ml-auto w-2 h-2 bg-blue-600 rounded-full"></div>
+              <span className="ml-auto w-2 h-2 bg-blue-600 rounded-full" />
             )}
           </Link>
         ))}
 
-        {role === "admin" && (
+        {/* ADMIN & SUPER ADMIN */}
+        {(role === "admin" || role === "superadmin") && (
           <>
-            <div className="my-4 h-px bg-gray-200"></div>
-            <p className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            <div className="my-4 h-px bg-gray-200" />
+            <p className="px-4 text-xs font-semibold text-gray-500 uppercase">
               Administration
             </p>
+
             {adminMenu.map((item) => (
               <Link
                 key={item.path}
                 to={item.path}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 font-medium ${
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition ${
                   isActive(item.path)
-                    ? "bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-sm"
+                    ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
                     : "text-gray-700 hover:bg-gray-100"
                 }`}
               >
                 <item.icon className="w-5 h-5" />
                 <span>{item.name}</span>
                 {isActive(item.path) && (
-                  <div className="ml-auto w-2 h-2 bg-indigo-600 rounded-full"></div>
+                  <span className="ml-auto w-2 h-2 bg-indigo-600 rounded-full" />
                 )}
               </Link>
             ))}
@@ -108,7 +111,7 @@ export default function Sidebar() {
       {/* Footer */}
       <div className="p-4 border-t border-gray-200">
         <p className="text-xs text-center text-gray-500">
-          © 2025 Your Company. All rights reserved.
+          © 2025 Your Company
         </p>
       </div>
     </aside>
