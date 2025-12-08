@@ -21,6 +21,7 @@ export default function Dashboard() {
           fetchRooms(),
           getMyBookings(),
         ]);
+
         setRooms(roomsRes.data);
         setBookings(myBookingsRes.data);
 
@@ -45,21 +46,16 @@ export default function Dashboard() {
       .slice(0, 5);
   }, [bookings]);
 
-  if (loading) {
-    return <DashboardSkeleton />;
-  }
-
-  if (error) {
+  if (loading) return <DashboardSkeleton />;
+  if (error)
     return (
       <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-xl">
         {error}
       </div>
     );
-  }
 
   return (
     <div className="space-y-8">
-      {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Dashboard Overview</h1>
         <p className="text-gray-500 mt-2">
@@ -67,7 +63,6 @@ export default function Dashboard() {
         </p>
       </div>
 
-      {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatCard
           title="Total Rooms"
@@ -114,7 +109,7 @@ export default function Dashboard() {
   );
 }
 
-// Premium Stat Card
+// Stat Card
 function StatCard({ title, value, icon: Icon, color }) {
   return (
     <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 hover:shadow-xl transition-shadow duration-300">
@@ -131,9 +126,10 @@ function StatCard({ title, value, icon: Icon, color }) {
   );
 }
 
-// Beautiful Meeting Card
+// Meeting Card FIXED IMAGE
 function MeetingCard({ booking }) {
   const room = booking.roomId;
+
   const date = new Date(booking.startDateTime);
   const formattedDate = date.toLocaleDateString("en-US", {
     weekday: "long",
@@ -141,16 +137,23 @@ function MeetingCard({ booking }) {
     month: "long",
     day: "numeric",
   });
+
   const time = `${booking.startTime} - ${booking.endTime}`;
+
+  // FIX: Safe image URL building
+  const imageUrl = room?.image
+    ? room.image.startsWith("/")
+      ? `${BACKEND_URL}${room.image}`
+      : `${BACKEND_URL}/${room.image}`
+    : null;
 
   return (
     <div className="flex items-center gap-6 p-6 bg-gray-50 rounded-2xl hover:bg-gray-100 transition-all duration-200 border border-gray-200">
-      {/* Room Image */}
       <div className="flex-shrink-0">
-        {room?.image ? (
+        {imageUrl ? (
           <img
-            src={`${BACKEND_URL}${room.image}`}
-            alt={room.name}
+            src={imageUrl}
+            alt={room?.name}
             className="w-20 h-20 rounded-xl object-cover shadow-md"
           />
         ) : (
@@ -160,46 +163,27 @@ function MeetingCard({ booking }) {
         )}
       </div>
 
-      {/* Details */}
       <div className="flex-1">
         <h3 className="text-xl font-bold text-gray-900">{booking.title}</h3>
+
         <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
           <span className="flex items-center gap-2">
             <MapPin className="w-4 h-4" />
             {room?.name || "Unknown Room"}
           </span>
+
           <span className="flex items-center gap-2">
             <Calendar className="w-4 h-4" />
             {formattedDate}
           </span>
+
           <span className="flex items-center gap-2">
             <Clock className="w-4 h-4" />
             {time}
           </span>
         </div>
-        {booking.participants && (
-          <div className="flex items-center gap-2 mt-3">
-            <Users className="w-4 h-4 text-gray-500" />
-            <div className="flex -space-x-2">
-              {booking.participants.slice(0, 4).map((p, i) => (
-                <div
-                  key={i}
-                  className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-white text-xs font-bold flex items-center justify-center border-2 border-white shadow"
-                >
-                  {p.charAt(0).toUpperCase()}
-                </div>
-              ))}
-              {booking.participants.length > 4 && (
-                <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-600 text-xs font-bold flex items-center justify-center border-2 border-white">
-                  +{booking.participants.length - 4}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* Status */}
       <div>
         <span
           className={`px-4 py-2 rounded-full text-sm font-semibold uppercase tracking-wider ${
@@ -217,11 +201,12 @@ function MeetingCard({ booking }) {
   );
 }
 
-// Loading Skeleton
+// Skeleton
 function DashboardSkeleton() {
   return (
     <div className="space-y-8 animate-pulse">
       <div className="h-10 bg-gray-200 rounded w-64"></div>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {[1, 2, 3].map((i) => (
           <div key={i} className="bg-white rounded-2xl shadow-lg p-8">
@@ -230,8 +215,10 @@ function DashboardSkeleton() {
           </div>
         ))}
       </div>
+
       <div className="bg-white rounded-2xl shadow-lg p-8">
         <div className="h-8 bg-gray-200 rounded w-48"></div>
+
         <div className="mt-6 space-y-4">
           {[1, 2, 3].map((i) => (
             <div key={i} className="h-24 bg-gray-100 rounded-2xl"></div>
@@ -249,9 +236,11 @@ function EmptyState() {
       <div className="w-24 h-24 mx-auto bg-gray-100 rounded-full flex items-center justify-center">
         <Calendar className="w-12 h-12 text-gray-400" />
       </div>
+
       <h3 className="mt-6 text-xl font-semibold text-gray-700">
         No Upcoming Meetings
       </h3>
+
       <p className="mt-2 text-gray-500">
         Enjoy your free time or book a new meeting room!
       </p>

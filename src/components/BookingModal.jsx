@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import Swal from "sweetalert2";
 import { fetchRooms } from "../api/rooms";
 import { createBooking } from "../api/bookings";
 
@@ -18,29 +19,38 @@ const initialForm = {
   },
 };
 
-export default function BookingModal({ close, refresh }) {
+export default function BookingModal({
+  close,
+  refresh,
+  defaultRoomId = null,
+}) {
   const [rooms, setRooms] = useState([]);
   const [form, setForm] = useState(initialForm);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
 
-  const loadRooms = async () => {
-    try {
-      const res = await fetchRooms();
-      setRooms(res.data);
-    } catch (err) {
-      setError(err.response?.data?.message || "Unable to load rooms");
-    }
-  };
-
+  /* ✅ Load rooms */
   useEffect(() => {
-    loadRooms();
+    fetchRooms()
+      .then((res) => setRooms(res.data || []))
+      .catch(() => {
+        Swal.fire("Error", "Unable to load rooms", "error");
+      });
   }, []);
+
+  /* ✅ Preselect room when opened from Rooms page */
+  useEffect(() => {
+    if (defaultRoomId) {
+      setForm((prev) => ({ ...prev, roomId: defaultRoomId }));
+    }
+  }, [defaultRoomId]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setSaving(true);
-    setError("");
+
+    if (!form.roomId || !form.title || !form.date || !form.startTime || !form.endTime) {
+      Swal.fire("Missing fields", "Please fill all required fields", "warning");
+      return;
+    }
 
     const payload = {
       roomId: form.roomId,
@@ -50,7 +60,7 @@ export default function BookingModal({ close, refresh }) {
       startTime: form.startTime,
       endTime: form.endTime,
       attendees: form.attendees
-        ? form.attendees.split(",").map((value) => value.trim())
+        ? form.attendees.split(",").map((v) => v.trim())
         : [],
     };
 
@@ -64,12 +74,28 @@ export default function BookingModal({ close, refresh }) {
     }
 
     try {
+      setSaving(true);
+
       await createBooking(payload);
+
+      /* ✅ SUCCESS POPUP */
+      Swal.fire({
+        icon: "success",
+        title: "Booking Created",
+        text: "Your meeting has been booked successfully",
+        timer: 2000,
+        showConfirmButton: false,
+      });
+
       setForm(initialForm);
-      refresh();
-      close();
+      refresh?.();
+      close(); // ✅ close only after success
     } catch (err) {
-      setError(err.response?.data?.message || "Error creating booking");
+      Swal.fire(
+        "Error",
+        err.response?.data?.message || "Error creating booking",
+        "error"
+      );
     } finally {
       setSaving(false);
     }
@@ -80,12 +106,8 @@ export default function BookingModal({ close, refresh }) {
       <div className="bg-white w-full max-w-2xl p-6 rounded-xl shadow-xl max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold">Create Booking</h2>
-          <button onClick={close} className="text-2xl">
-            &times;
-          </button>
+          <button onClick={close} className="text-2xl">&times;</button>
         </div>
-
-        {error && <p className="text-red-500 mb-3 text-sm">{error}</p>}
 
         <form className="space-y-4" onSubmit={handleSubmit}>
           <select
@@ -126,7 +148,6 @@ export default function BookingModal({ close, refresh }) {
               onChange={(e) => setForm({ ...form, date: e.target.value })}
               required
             />
-
             <input
               type="time"
               className="border p-2 rounded w-full"
@@ -134,7 +155,6 @@ export default function BookingModal({ close, refresh }) {
               onChange={(e) => setForm({ ...form, startTime: e.target.value })}
               required
             />
-
             <input
               type="time"
               className="border p-2 rounded w-full"
@@ -152,6 +172,7 @@ export default function BookingModal({ close, refresh }) {
             onChange={(e) => setForm({ ...form, attendees: e.target.value })}
           />
 
+          {/* ✅ Recurrence */}
           <div className="border rounded-lg p-4">
             <label className="flex items-center gap-2 mb-3">
               <input
@@ -173,7 +194,7 @@ export default function BookingModal({ close, refresh }) {
             {form.recurrence.isRecurring && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <select
-                  className="border rounded-lg p-2"
+                  className="border rounded p-2"
                   value={form.recurrence.pattern}
                   onChange={(e) =>
                     setForm((prev) => ({
@@ -192,7 +213,7 @@ export default function BookingModal({ close, refresh }) {
                 <input
                   type="number"
                   min="1"
-                  className="border rounded-lg p-2"
+                  className="border rounded p-2"
                   value={form.recurrence.interval}
                   onChange={(e) =>
                     setForm((prev) => ({
@@ -203,12 +224,11 @@ export default function BookingModal({ close, refresh }) {
                       },
                     }))
                   }
-                  placeholder="Interval"
                 />
 
                 <input
                   type="date"
-                  className="border rounded-lg p-2"
+                  className="border rounded p-2"
                   value={form.recurrence.endDate}
                   onChange={(e) =>
                     setForm((prev) => ({
@@ -219,14 +239,13 @@ export default function BookingModal({ close, refresh }) {
                       },
                     }))
                   }
-                  placeholder="End date"
                   required
                 />
               </div>
             )}
           </div>
 
-          <div className="flex justify-end gap-3 pt-4">
+          <div className="flex justify-end gap-3">
             <button
               type="button"
               onClick={close}
